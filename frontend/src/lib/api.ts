@@ -87,6 +87,30 @@ export interface Insight {
   created_at: string;
 }
 
+export interface ReportCitation {
+  post_id: string;
+  snapshot_id: string | null;
+  metric_field: string;
+}
+
+export interface ReportClaim {
+  claim_id: string;
+  text: string;
+  value: number | null;
+  unit: string | null;
+  metric_field: string | null;
+  citations: ReportCitation[];
+}
+
+export interface PerformanceReport {
+  title: string;
+  period_start: string;
+  period_end: string;
+  executive_summary: string;
+  sections: Array<{ heading: string; summary: string; claims: ReportClaim[] }>;
+  recommendations: Array<{ recommendation_id: string; text: string; based_on_claim_ids: string[] }>;
+}
+
 export interface GenerationHistoryEntry {
   attempt: number;
   status: string;
@@ -195,4 +219,5 @@ export const api = {
   getComparison: (id: string, token: string) => request<AnalyticsComparison>(`/campaigns/${id}/analytics/comparison`, {}, token),
   getInsights: (id: string, token: string) => request<Insight[]>(`/campaigns/${id}/insights`, {}, token),
   generateInsights: (id: string, token: string) => request<Insight[]>(`/campaigns/${id}/insights/generate`, { method: "POST" }, token),
+  generateWeeklyReport: (id: string, token: string) => request<PerformanceReport>(`/campaigns/${id}/reports/weekly`, { method: "POST", body: JSON.stringify({}) }, token),
 };
