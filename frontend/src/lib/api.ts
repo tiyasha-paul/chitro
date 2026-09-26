@@ -136,6 +136,8 @@ export interface Campaign {
 
 export interface CreateCampaignInput {
   name?: string;
+  /** Existing campaign ID whose saved insights will be carried into this brief. */
+  previous_insights?: string;
   brief: {
     title: string;
     genre: string;

@@ -30,13 +30,18 @@ class CampaignService:
         if hasattr(brief.language, "value"):
             brief_dict["language"] = brief.language.value
 
+        previous_insights: dict | list | None = {}
+        if request.previous_insights is not None:
+            source_campaign = await self.get_campaign(db, request.previous_insights, workspace_id=workspace_id)
+            previous_insights = source_campaign.previous_insights
+
         campaign = Campaign(
             name=campaign_name,
             objective=brief.objective,
             target_audience=brief.audience,
             brief_context=f"Genre: {brief.genre}. Key themes: {', '.join(brief.key_themes)}",
             brief_payload=brief_dict,
-            previous_insights={},
+            previous_insights=previous_insights,
             workspace_id=workspace_id,
         )
 

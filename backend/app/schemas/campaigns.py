@@ -15,6 +15,10 @@ class CreateCampaignRequest(BaseModel):
 
     name: str | None = Field(None, description="Campaign name (defaults to brief title)")
     brief: ContentBrief = Field(..., description="Structured content brief")
+    previous_insights: uuid.UUID | None = Field(
+        default=None,
+        description="Optional source campaign whose saved insights should inform this new campaign",
+    )
 
 
 class CampaignResponse(BaseModel):
