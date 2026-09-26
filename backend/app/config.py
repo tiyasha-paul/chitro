@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 
@@ -10,7 +12,11 @@ class Settings(BaseSettings):
     AUTH_SECRET_KEY: str = "development-only-change-me"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
+    model_config = {
+        "env_file": Path(__file__).resolve().parents[2] / ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
 
 
-settings = Settings(_env_file="/home/tiyasha/chitro/.env")
+settings = Settings()
