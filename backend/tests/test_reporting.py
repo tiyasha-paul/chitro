@@ -73,6 +73,7 @@ from app.schemas.reports import (
     WeeklyReportRequest,
 )
 from app.services.reporting import ReportingService
+from app.services.auth import AuthService, create_access_token
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -114,8 +115,22 @@ def mock_adapter():
 
 @pytest_asyncio.fixture
 async def client(mock_adapter):
+    async with async_session_maker() as db:
+        user, workspace = await AuthService().register_user(
+            db,
+            email=f"reporting-api-{uuid.uuid4().hex}@example.com",
+            password="secure-password",
+            display_name="Reporting API",
+        )
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={
+            "Authorization": f"Bearer {create_access_token(user.id)}",
+            "X-Workspace-ID": str(workspace.id),
+        },
+    ) as c:
         yield c
 
 
@@ -1058,7 +1073,11 @@ async def test_api_generate_weekly_report_success(client: AsyncClient):
     end_dt = now + timedelta(days=1)
 
     async with async_session_maker() as db:
-        camp = Campaign(name="API Campaign", objective="Testing API report")
+        camp = Campaign(
+            name="API Campaign",
+            objective="Testing API report",
+            workspace_id=uuid.UUID(client.headers["X-Workspace-ID"]),
+        )
         db.add(camp)
         await db.flush()
 
@@ -1145,7 +1164,7 @@ async def test_api_generate_weekly_report_success(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_api_generate_weekly_report_graceful_insufficient_data(client: AsyncClient):
     async with async_session_maker() as db:
-        camp = Campaign(name="No Metrics Campaign")
+        camp = Campaign(name="No Metrics Campaign", workspace_id=uuid.UUID(client.headers["X-Workspace-ID"]))
         db.add(camp)
         await db.commit()
 
@@ -1171,7 +1190,7 @@ async def test_api_generate_weekly_report_campaign_not_found(client: AsyncClient
 async def test_api_generate_weekly_report_citation_validation_failure_returns_502(client: AsyncClient):
     now = datetime.now(timezone.utc)
     async with async_session_maker() as db:
-        camp = Campaign(name="Hallucinating Campaign")
+        camp = Campaign(name="Hallucinating Campaign", workspace_id=uuid.UUID(client.headers["X-Workspace-ID"]))
         db.add(camp)
         await db.flush()
 

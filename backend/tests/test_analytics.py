@@ -31,6 +31,7 @@ from app.main import app
 from app.schemas.analytics import MetricSnapshotCreate
 from app.schemas.content import GeneratedInstagramPost, MediaDirection
 from app.services.analytics import AnalyticsService
+from app.services.auth import AuthService, create_access_token
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -88,8 +89,22 @@ def mock_adapter():
 
 @pytest_asyncio.fixture
 async def client(spy_llm, mock_adapter):
+    async with async_session_maker() as db:
+        user, workspace = await AuthService().register_user(
+            db,
+            email=f"analytics-api-{uuid.uuid4().hex}@example.com",
+            password="secure-password",
+            display_name="Analytics API",
+        )
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={
+            "Authorization": f"Bearer {create_access_token(user.id)}",
+            "X-Workspace-ID": str(workspace.id),
+        },
+    ) as c:
         yield c
 
 

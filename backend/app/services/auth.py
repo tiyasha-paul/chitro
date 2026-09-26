@@ -124,6 +124,7 @@ class AuthService:
         return await db.get(User, user_id)
 
     async def get_workspace_for_user(self, db: AsyncSession, user_id: uuid.UUID) -> Workspace | None:
+        """Return the earliest membership workspace for temporary headerless clients."""
         stmt = (
             select(WorkspaceMember)
             .where(WorkspaceMember.user_id == user_id)
@@ -132,3 +133,17 @@ class AuthService:
         )
         membership = (await db.execute(stmt)).scalars().first()
         return membership.workspace if membership else None
+
+    async def get_workspace_membership(
+        self, db: AsyncSession, user_id: uuid.UUID, workspace_id: uuid.UUID
+    ) -> WorkspaceMember | None:
+        """Return a user's membership for one explicitly selected workspace."""
+        stmt = (
+            select(WorkspaceMember)
+            .where(
+                WorkspaceMember.user_id == user_id,
+                WorkspaceMember.workspace_id == workspace_id,
+            )
+            .options(selectinload(WorkspaceMember.workspace))
+        )
+        return (await db.execute(stmt)).scalar_one_or_none()

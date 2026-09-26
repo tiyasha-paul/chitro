@@ -18,6 +18,8 @@ from app.domain.enums import Language, Platform, PostStatus
 from app.main import app
 from app.schemas.briefs import ContentBrief
 from app.schemas.content import GeneratedInstagramPost, MediaDirection
+from app.database import async_session_maker
+from app.services.auth import AuthService, create_access_token
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -78,8 +80,22 @@ def mock_provider() -> MockLLMProvider:
 
 @pytest_asyncio.fixture
 async def client():
+    async with async_session_maker() as db:
+        user, workspace = await AuthService().register_user(
+            db,
+            email=f"workflow-api-{uuid.uuid4().hex}@example.com",
+            password="secure-password",
+            display_name="Workflow API",
+        )
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={
+            "Authorization": f"Bearer {create_access_token(user.id)}",
+            "X-Workspace-ID": str(workspace.id),
+        },
+    ) as c:
         yield c
 
 

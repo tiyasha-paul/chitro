@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
         allow_origins=get_cors_origins(),
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "Accept"],
+        allow_headers=["Authorization", "Content-Type", "Accept", "X-Workspace-ID"],
     )
 
     # Exception Handlers

@@ -1,15 +1,18 @@
 """FastAPI dependency injection providers."""
 
 from collections.abc import AsyncGenerator
-from fastapi import Depends, HTTPException, status
+import uuid
+
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters import ChannelAdapter, MockInstagramAdapter
 from app.ai.gemini import GeminiProvider
 from app.ai.provider import LLMProvider
 from app.database import get_db_session
-from app.domain.models import User
+from app.domain.models import Campaign, PlatformPost, User, Workspace
 from app.services.analytics import AnalyticsService
 from app.services.approval import ApprovalService
 from app.services.campaign import CampaignService
@@ -90,6 +93,55 @@ async def get_current_user(
     if current_user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     return current_user
+
+
+async def get_selected_workspace(
+    current_user: User = Depends(get_current_user),
+    x_workspace_id: str | None = Header(default=None, alias="X-Workspace-ID"),
+    db: AsyncSession = Depends(get_db),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> Workspace:
+    """Resolve an authenticated user's selected workspace.
+
+    Clients should send ``X-Workspace-ID``. During the frontend rollout, an
+    omitted header deliberately falls back to the user's earliest membership;
+    this compatibility behavior is centralized here and should be removed once
+    all clients send an explicit selection.
+    """
+    if x_workspace_id is None:
+        workspace = await auth_service.get_workspace_for_user(db, current_user.id)
+        if workspace is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace membership required")
+        return workspace
+
+    try:
+        workspace_id = uuid.UUID(x_workspace_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="X-Workspace-ID must be a valid UUID") from None
+
+    membership = await auth_service.get_workspace_membership(db, current_user.id, workspace_id)
+    if membership is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace membership required")
+    return membership.workspace
+
+
+async def get_selected_workspace_post(
+    post_id: uuid.UUID,
+    selected_workspace: Workspace = Depends(get_selected_workspace),
+    db: AsyncSession = Depends(get_db),
+) -> PlatformPost:
+    """Load a post only when its campaign belongs to the selected workspace."""
+    stmt = (
+        select(PlatformPost)
+        .join(Campaign, PlatformPost.campaign_id == Campaign.id)
+        .where(PlatformPost.id == post_id, Campaign.workspace_id == selected_workspace.id)
+    )
+    post = (await db.execute(stmt)).scalar_one_or_none()
+    if post is None:
+        # A 404 prevents callers from using post IDs to discover another
+        # workspace's resources.
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    return post
 
 
 def get_approval_service() -> ApprovalService:

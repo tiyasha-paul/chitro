@@ -1,7 +1,5 @@
 """Post retrieval, approval, rejection, regeneration, scheduling, and publishing endpoints."""
 
-import uuid
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +8,7 @@ from app.api.deps import (
     get_approval_service,
     get_db,
     get_publishing_service,
+    get_selected_workspace_post,
     get_workflow_service,
 )
 from app.schemas.analytics import MetricSnapshotCreate, MetricSnapshotResponse
@@ -22,6 +21,7 @@ from app.services.analytics import AnalyticsService
 from app.services.approval import ApprovalService
 from app.services.publishing import PublishingService
 from app.services.workflow import ContentWorkflowService
+from app.domain.models import PlatformPost
 
 router = APIRouter(prefix="/posts", tags=["Posts & Workflow Lifecycle"])
 
@@ -32,12 +32,9 @@ router = APIRouter(prefix="/posts", tags=["Posts & Workflow Lifecycle"])
     summary="Get platform post details and lifecycle status",
 )
 async def get_post(
-    post_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    workflow_service: ContentWorkflowService = Depends(get_workflow_service),
+    post: PlatformPost = Depends(get_selected_workspace_post),
 ) -> PlatformPostResponse:
     """Retrieve full post details, content, validation status, and audit history."""
-    post = await workflow_service.get_post(db, post_id)
     return PlatformPostResponse.model_validate(post)
 
 
@@ -47,7 +44,7 @@ async def get_post(
     summary="Approve a post currently pending approval",
 )
 async def approve_post(
-    post_id: uuid.UUID,
+    post: PlatformPost = Depends(get_selected_workspace_post),
     db: AsyncSession = Depends(get_db),
     approval_service: ApprovalService = Depends(get_approval_service),
 ) -> PlatformPostResponse:
@@ -55,8 +52,8 @@ async def approve_post(
 
     Transitions: PENDING_APPROVAL -> APPROVED
     """
-    post = await approval_service.approve_post(db, post_id)
-    return PlatformPostResponse.model_validate(post)
+    approved_post = await approval_service.approve_post(db, post.id)
+    return PlatformPostResponse.model_validate(approved_post)
 
 
 @router.post(
@@ -65,8 +62,8 @@ async def approve_post(
     summary="Reject a post with human feedback",
 )
 async def reject_post(
-    post_id: uuid.UUID,
     request: RejectPostRequest,
+    post: PlatformPost = Depends(get_selected_workspace_post),
     db: AsyncSession = Depends(get_db),
     approval_service: ApprovalService = Depends(get_approval_service),
 ) -> PlatformPostResponse:
@@ -74,8 +71,8 @@ async def reject_post(
 
     Transitions: PENDING_APPROVAL -> REJECTED
     """
-    post = await approval_service.reject_post(db, post_id, request.reason)
-    return PlatformPostResponse.model_validate(post)
+    rejected_post = await approval_service.reject_post(db, post.id, request.reason)
+    return PlatformPostResponse.model_validate(rejected_post)
 
 
 @router.post(
@@ -84,7 +81,7 @@ async def reject_post(
     summary="Regenerate a rejected or failed post",
 )
 async def regenerate_post(
-    post_id: uuid.UUID,
+    post: PlatformPost = Depends(get_selected_workspace_post),
     db: AsyncSession = Depends(get_db),
     workflow_service: ContentWorkflowService = Depends(get_workflow_service),
 ) -> PlatformPostResponse:
@@ -93,8 +90,8 @@ async def regenerate_post(
     Preserves current content into generation_history audit log, increments
     attempt counter, and applies previous rejection feedback to prompt.
     """
-    post = await workflow_service.regenerate_post(db, post_id)
-    return PlatformPostResponse.model_validate(post)
+    regenerated_post = await workflow_service.regenerate_post(db, post.id)
+    return PlatformPostResponse.model_validate(regenerated_post)
 
 
 @router.post(
@@ -103,8 +100,8 @@ async def regenerate_post(
     summary="Schedule an approved post for future publication",
 )
 async def schedule_post(
-    post_id: uuid.UUID,
     request: SchedulePostRequest,
+    post: PlatformPost = Depends(get_selected_workspace_post),
     db: AsyncSession = Depends(get_db),
     publishing_service: PublishingService = Depends(get_publishing_service),
 ) -> PlatformPostResponse:
@@ -112,8 +109,8 @@ async def schedule_post(
 
     Transitions: APPROVED -> SCHEDULED
     """
-    post = await publishing_service.schedule_post(db, post_id, request.scheduled_at)
-    return PlatformPostResponse.model_validate(post)
+    scheduled_post = await publishing_service.schedule_post(db, post.id, request.scheduled_at)
+    return PlatformPostResponse.model_validate(scheduled_post)
 
 
 @router.post(
@@ -122,7 +119,7 @@ async def schedule_post(
     summary="Publish an approved or scheduled post to the platform",
 )
 async def publish_post(
-    post_id: uuid.UUID,
+    post: PlatformPost = Depends(get_selected_workspace_post),
     db: AsyncSession = Depends(get_db),
     publishing_service: PublishingService = Depends(get_publishing_service),
 ) -> PlatformPostResponse:
@@ -133,8 +130,8 @@ async def publish_post(
     - If SCHEDULED: SCHEDULED -> PUBLISHED
     - If already PUBLISHED: Idempotent (returns existing post without re-calling adapter)
     """
-    post = await publishing_service.publish_post(db, post_id)
-    return PlatformPostResponse.model_validate(post)
+    published_post = await publishing_service.publish_post(db, post.id)
+    return PlatformPostResponse.model_validate(published_post)
 
 
 @router.post(
@@ -144,8 +141,8 @@ async def publish_post(
     summary="Record a metric snapshot for a published post",
 )
 async def record_metric_snapshot(
-    post_id: uuid.UUID,
     request: MetricSnapshotCreate,
+    post: PlatformPost = Depends(get_selected_workspace_post),
     db: AsyncSession = Depends(get_db),
     analytics_service: AnalyticsService = Depends(get_analytics_service),
 ) -> MetricSnapshotResponse:
@@ -155,7 +152,7 @@ async def record_metric_snapshot(
     - Post must exist (404)
     - Post must be in PUBLISHED status (409)
     """
-    snapshot = await analytics_service.record_snapshot(db, post_id, request)
+    snapshot = await analytics_service.record_snapshot(db, post.id, request)
     return MetricSnapshotResponse.model_validate(snapshot)
 
 
@@ -165,10 +162,10 @@ async def record_metric_snapshot(
     summary="Retrieve all metric snapshots for a post",
 )
 async def get_metric_snapshots(
-    post_id: uuid.UUID,
+    post: PlatformPost = Depends(get_selected_workspace_post),
     db: AsyncSession = Depends(get_db),
     analytics_service: AnalyticsService = Depends(get_analytics_service),
 ) -> list[MetricSnapshotResponse]:
     """Retrieve full chronological history of metric snapshots for a post."""
-    snapshots = await analytics_service.get_snapshots(db, post_id)
+    snapshots = await analytics_service.get_snapshots(db, post.id)
     return [MetricSnapshotResponse.model_validate(s) for s in snapshots]
