@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-3-flash-preview"
     AUTH_SECRET_KEY: str = "development-only-change-me"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    CORS_ORIGINS: str = "http://localhost:3000"
 
     model_config = {
         "env_file": Path(__file__).resolve().parents[2] / ".env",
@@ -20,3 +21,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def get_cors_origins(value: str = settings.CORS_ORIGINS) -> list[str]:
+    """Parse comma-separated allowed frontend origins, ignoring empty entries."""
+    return [origin.strip() for origin in value.split(",") if origin.strip()]

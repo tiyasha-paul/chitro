@@ -13,6 +13,7 @@ from app.api.campaigns import router as campaigns_router
 from app.api.auth import router as auth_router
 from app.api.posts import router as posts_router
 from app.database import init_db
+from app.config import get_cors_origins
 from app.domain.exceptions import (
     CitationValidationError,
     InvalidStateTransitionError,
@@ -37,13 +38,13 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS configuration
+    # Browser clients use bearer tokens in the Authorization header, not cookies.
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_origins=get_cors_origins(),
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept"],
     )
 
     # Exception Handlers
