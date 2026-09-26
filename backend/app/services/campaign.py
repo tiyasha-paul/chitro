@@ -19,6 +19,7 @@ class CampaignService:
         self,
         db: AsyncSession,
         request: CreateCampaignRequest,
+        workspace_id: uuid.UUID | None = None,
     ) -> Campaign:
         """Create a new Campaign from a structured content brief."""
         brief = request.brief
@@ -36,6 +37,7 @@ class CampaignService:
             brief_context=f"Genre: {brief.genre}. Key themes: {', '.join(brief.key_themes)}",
             brief_payload=brief_dict,
             previous_insights={},
+            workspace_id=workspace_id,
         )
 
         db.add(campaign)
@@ -47,13 +49,12 @@ class CampaignService:
         self,
         db: AsyncSession,
         campaign_id: uuid.UUID,
+        workspace_id: uuid.UUID | None = None,
     ) -> Campaign:
         """Retrieve a campaign with its posts preloaded."""
-        stmt = (
-            select(Campaign)
-            .where(Campaign.id == campaign_id)
-            .options(selectinload(Campaign.posts))
-        )
+        stmt = select(Campaign).where(Campaign.id == campaign_id).options(selectinload(Campaign.posts))
+        if workspace_id is not None:
+            stmt = stmt.where(Campaign.workspace_id == workspace_id)
         result = await db.execute(stmt)
         campaign = result.scalar_one_or_none()
         if campaign is None:

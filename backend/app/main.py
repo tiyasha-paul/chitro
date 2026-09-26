@@ -10,7 +10,9 @@ from fastapi.responses import JSONResponse
 from app.adapters import ChannelAdapterError
 from app.ai.provider import AIProviderError
 from app.api.campaigns import router as campaigns_router
+from app.api.auth import router as auth_router
 from app.api.posts import router as posts_router
+from app.database import init_db
 from app.domain.exceptions import (
     CitationValidationError,
     InvalidStateTransitionError,
@@ -106,6 +108,7 @@ def create_app() -> FastAPI:
         )
 
     # Mount API routers
+    app.include_router(auth_router, prefix="/api")
     app.include_router(campaigns_router, prefix="/api")
     app.include_router(posts_router, prefix="/api")
 
