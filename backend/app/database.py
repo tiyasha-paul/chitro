@@ -14,6 +14,9 @@ class Base(DeclarativeBase):
 
 async def init_db() -> None:
     """Create all tables from metadata."""
+    # Import the mapped models so their tables are registered with Base.metadata.
+    import app.domain.models  # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

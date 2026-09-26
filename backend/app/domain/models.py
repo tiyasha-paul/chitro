@@ -2,12 +2,53 @@ import uuid
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.domain.enums import PostStatus
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    display_name: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    workspace_members: Mapped[list["WorkspaceMember"]] = relationship(back_populates="user")
+
+    @property
+    def memberships(self) -> list["WorkspaceMember"]:
+        """Convenience alias for this user's workspace memberships."""
+        return self.workspace_members
+
+
+class Workspace(Base):
+    __tablename__ = "workspaces"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    members: Mapped[list["WorkspaceMember"]] = relationship(back_populates="workspace")
+    campaigns: Mapped[list["Campaign"]] = relationship(back_populates="workspace")
+
+
+class WorkspaceMember(Base):
+    __tablename__ = "workspace_members"
+    __table_args__ = (UniqueConstraint("workspace_id", "user_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    workspace_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workspaces.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False, default="owner")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    workspace: Mapped["Workspace"] = relationship(back_populates="members")
+    user: Mapped["User"] = relationship(back_populates="workspace_members")
 
 
 class Campaign(Base):
@@ -20,8 +61,10 @@ class Campaign(Base):
     brief_context: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     previous_insights: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     brief_payload: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    workspace_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("workspaces.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    workspace: Mapped[Optional["Workspace"]] = relationship(back_populates="campaigns")
     posts: Mapped[list["PlatformPost"]] = relationship(back_populates="campaign")
     insights: Mapped[list["Insight"]] = relationship(back_populates="campaign")
 

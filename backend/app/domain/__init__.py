@@ -1,5 +1,5 @@
 from app.domain.enums import Language, Platform, PostStatus
-from app.domain.models import Campaign, Insight, MetricSnapshot, PlatformPost
+from app.domain.models import Campaign, Insight, MetricSnapshot, PlatformPost, User, Workspace, WorkspaceMember
 from app.domain.state_machine import (
     DomainError,
     InvalidStateTransitionError,
@@ -16,6 +16,9 @@ __all__ = [
     "PlatformPost",
     "MetricSnapshot",
     "Insight",
+    "User",
+    "Workspace",
+    "WorkspaceMember",
     "Platform",
     "Language",
     "PostStatus",
