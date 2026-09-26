@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { Button, Card, Input, PageHeader, Textarea } from "@/components/ui";
 import { api, ApiError, type AuthResponse, type Campaign } from "@/lib/api";
+import { getSession } from "@/lib/session";
 
 export default function NewCampaignPage() {
   const router = useRouter();
@@ -30,7 +31,9 @@ export default function NewCampaignPage() {
   useEffect(() => {
     async function loadCampaigns() {
       try {
-        const campaigns = await api.listCampaigns();
+        const session = getSession();
+        if (!session) return;
+        const campaigns = await api.listCampaigns(session.access_token);
         // Filter campaigns with non-empty previous_insights
         const learningCampaigns = campaigns.filter(c => c.previous_insights && Object.keys(c.previous_insights).length > 0);
         setAvailableCampaigns(learningCampaigns);
@@ -63,7 +66,14 @@ export default function NewCampaignPage() {
         },
       };
 
-      const campaign = await api.createCampaign(payload);
+      const session = getSession();
+      if (!session) {
+        setError("You must be logged in to create a campaign.");
+        setLoading(false);
+        return;
+      }
+
+      const campaign = await api.createCampaign(payload, session.access_token);
       router.push(`/campaigns/${campaign.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -265,7 +275,7 @@ export default function NewCampaignPage() {
                       <option value="">Do not carry forward learning (Start fresh)</option>
                       {availableCampaigns.map((camp) => (
                         <option key={camp.id} value={camp.id}>
-                          {camp.name || camp.brief.title}
+                          {camp.name || "Untitled Campaign"}
                         </option>
                       ))}
                     </select>

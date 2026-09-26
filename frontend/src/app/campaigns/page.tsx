@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Badge, Button, Card, EmptyState, LoadingState, PageHeader, StatusBadge } from "@/components/ui";
 import { api, ApiError, type Campaign } from "@/lib/api";
+import { getSession } from "@/lib/session";
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -14,7 +15,9 @@ export default function CampaignsPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.listCampaigns();
+      const session = getSession();
+      if (!session) return;
+      const data = await api.listCampaigns(session.access_token);
       setCampaigns(data);
     } catch (err) {
       if (err instanceof ApiError) {

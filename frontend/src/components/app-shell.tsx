@@ -7,7 +7,8 @@ import { clearSession, getSession, saveSession } from "@/lib/session";
 import { Button, LoadingState } from "./ui";
 
 interface AppShellProps {
-  children: (session: AuthResponse) => ReactNode;
+  children: ReactNode | ((session: AuthResponse) => ReactNode);
+  requireAuth?: boolean;
 }
 
 export function AppShell({ children }: AppShellProps) {
@@ -27,7 +28,7 @@ export function AppShell({ children }: AppShellProps) {
         }
 
         try {
-          const fresh = await api.me();
+          const fresh = await api.me(stored.access_token);
           saveSession(fresh);
           setSession(fresh);
         } catch (err) {
@@ -48,13 +49,9 @@ export function AppShell({ children }: AppShellProps) {
     checkAuth();
   }, [router]);
 
-  const handleLogout = async () => {
-    try {
-      await api.logout();
-    } finally {
-      clearSession();
-      router.push("/login");
-    }
+  const handleLogout = () => {
+    clearSession();
+    router.push("/login");
   };
 
   if (loading) {
@@ -171,7 +168,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-screen lg:ml-56">
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {children(session)}
+          {typeof children === "function" ? children(session) : children}
         </main>
       </div>
     </div>
