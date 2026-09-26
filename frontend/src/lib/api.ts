@@ -31,8 +31,60 @@ export interface PlatformPost {
   rejection_reason: string | null;
   generation_attempt: number;
   generation_history: GenerationHistoryEntry[] | null;
+  scheduled_at: string | null;
+  published_at: string | null;
+  published_post_id: string | null;
+  publish_result: PublishResult | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PublishResult {
+  provider: string;
+  external_post_id: string;
+  published_at: string;
+  url: string;
+  status: string;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface MetricSnapshot {
+  id: string;
+  platform_post_id: string;
+  impressions: number | null;
+  reach: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  saves: number | null;
+  clicks: number | null;
+  engagement_rate: number | null;
+  captured_at: string;
+}
+
+export interface MetricSnapshotInput {
+  impressions?: number;
+  reach?: number;
+  likes?: number;
+  comments?: number;
+  shares?: number;
+  saves?: number;
+  clicks?: number;
+}
+
+export interface AnalyticsComparison {
+  campaign_id: string;
+  comparison_window: string;
+  posts: Array<{ post_id: string; platform: string; reach: number | null; impressions: number | null; likes: number | null; comments: number | null; shares: number | null; saves: number | null; clicks: number | null; engagement_rate: number | null; snapshot_id: string | null; captured_at: string | null }>;
+  summary: string | null;
+}
+
+export interface Insight {
+  id: string;
+  campaign_id: string;
+  summary: string;
+  evidence: Array<{ post_id: string; metric_field: string; value: unknown; snapshot_id?: string | null }>;
+  created_at: string;
 }
 
 export interface GenerationHistoryEntry {
@@ -133,4 +185,14 @@ export const api = {
     request<PlatformPost>(`/posts/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }, token),
   regeneratePost: (id: string, token: string) =>
     request<PlatformPost>(`/posts/${id}/regenerate`, { method: "POST" }, token),
+  schedulePost: (id: string, scheduledAt: string, token: string) =>
+    request<PlatformPost>(`/posts/${id}/schedule`, { method: "POST", body: JSON.stringify({ scheduled_at: scheduledAt }) }, token),
+  publishPost: (id: string, token: string) =>
+    request<PlatformPost>(`/posts/${id}/publish`, { method: "POST" }, token),
+  getMetrics: (id: string, token: string) => request<MetricSnapshot[]>(`/posts/${id}/metrics`, {}, token),
+  recordMetrics: (id: string, input: MetricSnapshotInput, token: string) =>
+    request<MetricSnapshot>(`/posts/${id}/metrics`, { method: "POST", body: JSON.stringify(input) }, token),
+  getComparison: (id: string, token: string) => request<AnalyticsComparison>(`/campaigns/${id}/analytics/comparison`, {}, token),
+  getInsights: (id: string, token: string) => request<Insight[]>(`/campaigns/${id}/insights`, {}, token),
+  generateInsights: (id: string, token: string) => request<Insight[]>(`/campaigns/${id}/insights/generate`, { method: "POST" }, token),
 };
