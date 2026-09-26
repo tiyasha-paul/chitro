@@ -8,6 +8,7 @@ from app.adapters import ChannelAdapter, MockInstagramAdapter
 from app.ai.gemini import GeminiProvider
 from app.ai.provider import LLMProvider
 from app.database import get_db_session
+from app.services.analytics import AnalyticsService
 from app.services.approval import ApprovalService
 from app.services.campaign import CampaignService
 from app.services.generation import GenerationService
@@ -73,3 +74,8 @@ def get_publishing_service(
 ) -> PublishingService:
     """Provide PublishingService."""
     return PublishingService(default_adapter=adapter)
+
+
+def get_analytics_service() -> AnalyticsService:
+    """Provide AnalyticsService."""
+    return AnalyticsService()

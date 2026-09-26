@@ -1,18 +1,25 @@
 """Campaign and generation API endpoints."""
 
 import uuid
-from typing import Sequence
+from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_campaign_service, get_db, get_workflow_service
+from app.api.deps import (
+    get_analytics_service,
+    get_campaign_service,
+    get_db,
+    get_workflow_service,
+)
+from app.schemas.analytics import AnalyticsComparisonResponse, InsightResponse
 from app.schemas.campaigns import CampaignResponse, CreateCampaignRequest
 from app.schemas.posts import GeneratePostRequest, PlatformPostResponse
+from app.services.analytics import AnalyticsService
 from app.services.campaign import CampaignService
 from app.services.workflow import ContentWorkflowService
 
-router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
+router = APIRouter(prefix="/campaigns", tags=["Campaigns & Analytics"])
 
 
 @router.post(
@@ -81,3 +88,52 @@ async def generate_post(
         language=request.language,
     )
     return PlatformPostResponse.model_validate(post)
+
+
+@router.get(
+    "/{campaign_id}/analytics/comparison",
+    response_model=AnalyticsComparisonResponse,
+    summary="Perform like-for-like cross-platform metric comparison",
+)
+async def get_campaign_comparison(
+    campaign_id: uuid.UUID,
+    window: Optional[str] = Query("latest", description="Comparison window timing, e.g. 'latest' or '24h'"),
+    db: AsyncSession = Depends(get_db),
+    analytics_service: AnalyticsService = Depends(get_analytics_service),
+) -> AnalyticsComparisonResponse:
+    """Compare performance across published posts for this campaign.
+
+    Normalizes derived metrics (such as engagement rate) while preserving raw platform counts.
+    Does not produce subjective 'winner' evaluations.
+    """
+    return await analytics_service.get_campaign_comparison(db, campaign_id, window=window)
+
+
+@router.post(
+    "/{campaign_id}/insights/generate",
+    response_model=list[InsightResponse],
+    summary="Generate deterministic evidence-backed insights from published metrics",
+)
+async def generate_campaign_insights(
+    campaign_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    analytics_service: AnalyticsService = Depends(get_analytics_service),
+) -> list[InsightResponse]:
+    """Derive verifiable insights from published post performance and update Campaign.previous_insights."""
+    insights = await analytics_service.generate_campaign_insights(db, campaign_id)
+    return [InsightResponse.model_validate(ins) for ins in insights]
+
+
+@router.get(
+    "/{campaign_id}/insights",
+    response_model=list[InsightResponse],
+    summary="List stored insights for a campaign",
+)
+async def get_campaign_insights(
+    campaign_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    analytics_service: AnalyticsService = Depends(get_analytics_service),
+) -> list[InsightResponse]:
+    """Retrieve all persisted insights for this campaign."""
+    insights = await analytics_service.get_campaign_insights(db, campaign_id)
+    return [InsightResponse.model_validate(ins) for ins in insights]

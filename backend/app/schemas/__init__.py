@@ -1,3 +1,11 @@
+from app.schemas.analytics import (
+    AnalyticsComparisonResponse,
+    ComparisonPost,
+    EvidenceItem,
+    InsightResponse,
+    MetricSnapshotCreate,
+    MetricSnapshotResponse,
+)
 from app.schemas.briefs import ContentBrief
 from app.schemas.campaigns import CampaignResponse, CreateCampaignRequest
 from app.schemas.content import GeneratedInstagramPost, MediaDirection
@@ -20,4 +28,10 @@ __all__ = [
     "SchedulePostRequest",
     "GenerationHistoryEntry",
     "PlatformPostResponse",
+    "MetricSnapshotCreate",
+    "MetricSnapshotResponse",
+    "ComparisonPost",
+    "AnalyticsComparisonResponse",
+    "EvidenceItem",
+    "InsightResponse",
 ]

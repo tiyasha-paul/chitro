@@ -6,16 +6,19 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
+    get_analytics_service,
     get_approval_service,
     get_db,
     get_publishing_service,
     get_workflow_service,
 )
+from app.schemas.analytics import MetricSnapshotCreate, MetricSnapshotResponse
 from app.schemas.posts import (
     PlatformPostResponse,
     RejectPostRequest,
     SchedulePostRequest,
 )
+from app.services.analytics import AnalyticsService
 from app.services.approval import ApprovalService
 from app.services.publishing import PublishingService
 from app.services.workflow import ContentWorkflowService
@@ -132,3 +135,40 @@ async def publish_post(
     """
     post = await publishing_service.publish_post(db, post_id)
     return PlatformPostResponse.model_validate(post)
+
+
+@router.post(
+    "/{post_id}/metrics",
+    response_model=MetricSnapshotResponse,
+    status_code=201,
+    summary="Record a metric snapshot for a published post",
+)
+async def record_metric_snapshot(
+    post_id: uuid.UUID,
+    request: MetricSnapshotCreate,
+    db: AsyncSession = Depends(get_db),
+    analytics_service: AnalyticsService = Depends(get_analytics_service),
+) -> MetricSnapshotResponse:
+    """Record performance metrics (reach, impressions, likes, etc.) for a published post.
+
+    Requires:
+    - Post must exist (404)
+    - Post must be in PUBLISHED status (409)
+    """
+    snapshot = await analytics_service.record_snapshot(db, post_id, request)
+    return MetricSnapshotResponse.model_validate(snapshot)
+
+
+@router.get(
+    "/{post_id}/metrics",
+    response_model=list[MetricSnapshotResponse],
+    summary="Retrieve all metric snapshots for a post",
+)
+async def get_metric_snapshots(
+    post_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    analytics_service: AnalyticsService = Depends(get_analytics_service),
+) -> list[MetricSnapshotResponse]:
+    """Retrieve full chronological history of metric snapshots for a post."""
+    snapshots = await analytics_service.get_snapshots(db, post_id)
+    return [MetricSnapshotResponse.model_validate(s) for s in snapshots]

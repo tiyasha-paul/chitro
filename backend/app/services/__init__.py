@@ -1,6 +1,8 @@
+from app.services.analytics import AnalyticsService
 from app.services.approval import ApprovalService
 from app.services.campaign import CampaignService
 from app.services.generation import GenerationService
+from app.services.publishing import PublishingService
 from app.services.validation import ValidationService
 from app.services.workflow import ContentWorkflowService
 
@@ -10,4 +12,6 @@ __all__ = [
     "CampaignService",
     "ApprovalService",
     "ContentWorkflowService",
+    "PublishingService",
+    "AnalyticsService",
 ]

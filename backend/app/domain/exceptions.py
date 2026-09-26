@@ -1,10 +1,6 @@
 """Domain-level exceptions for Chitro."""
 
-from app.domain.enums import PostStatus
-
-
-class DomainError(Exception):
-    """Base exception for all domain violations."""
+from app.domain.state_machine import DomainError, InvalidStateTransitionError
 
 
 class ResourceNotFoundError(DomainError):
@@ -16,12 +12,12 @@ class ResourceNotFoundError(DomainError):
         super().__init__(f"{resource_type} with ID '{identifier}' not found.")
 
 
-class InvalidStateTransitionError(DomainError):
-    """Raised when an invalid state transition is attempted."""
+class PostNotPublishedError(DomainError):
+    """Raised when attempting to record metrics on a non-published post."""
 
-    def __init__(self, current: PostStatus, target: PostStatus):
-        self.current = current
-        self.target = target
+    def __init__(self, post_id: str, current_status: str):
+        self.post_id = post_id
+        self.current_status = current_status
         super().__init__(
-            f"Cannot transition from {current.value!r} to {target.value!r}"
+            f"Cannot record metrics for post '{post_id}' in status '{current_status}'. Post must be published."
         )

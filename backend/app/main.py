@@ -11,8 +11,11 @@ from app.adapters import ChannelAdapterError
 from app.ai.provider import AIProviderError
 from app.api.campaigns import router as campaigns_router
 from app.api.posts import router as posts_router
-from app.database import init_db
-from app.domain.exceptions import InvalidStateTransitionError, ResourceNotFoundError
+from app.domain.exceptions import (
+    InvalidStateTransitionError,
+    PostNotPublishedError,
+    ResourceNotFoundError,
+)
 
 
 @asynccontextmanager
@@ -56,6 +59,17 @@ def create_app() -> FastAPI:
                 "detail": str(exc),
                 "current_status": exc.current.value,
                 "target_status": exc.target.value,
+            },
+        )
+
+    @app.exception_handler(PostNotPublishedError)
+    async def post_not_published_handler(request: Request, exc: PostNotPublishedError) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={
+                "detail": str(exc),
+                "post_id": exc.post_id,
+                "current_status": exc.current_status,
             },
         )
 
