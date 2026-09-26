@@ -5,6 +5,7 @@ from typing import Any
 
 from app.domain.enums import Platform
 from app.validation.instagram import InstagramSpec
+from app.validation.x import XSpec
 from app.validation.platform_spec import PlatformSpec, ValidationResult
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class ValidationEngine:
     def __init__(self, specs: dict[Platform, PlatformSpec] | None = None) -> None:
         self._specs: dict[Platform, PlatformSpec] = specs if specs is not None else {
             Platform.INSTAGRAM: InstagramSpec(),
+            Platform.X: XSpec(),
         }
 
     def register_spec(self, platform: Platform, spec: PlatformSpec) -> None:

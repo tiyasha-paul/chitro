@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from app.ai.platform_strategy import InstagramStrategy, PlatformStrategy
+from app.ai.platform_strategy import InstagramStrategy, PlatformStrategy, XStrategy
 from app.ai.prompts import build_generation_prompt, build_system_instruction
 from app.ai.provider import LLMProvider
 from app.domain.enums import Language, Platform
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 # Registry of platform strategies
 _STRATEGY_REGISTRY: dict[Platform, PlatformStrategy] = {
     Platform.INSTAGRAM: InstagramStrategy(),
+    Platform.X: XStrategy(),
 }
 
 

@@ -6,7 +6,7 @@ These tests use mocks — no live LLM calls.
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from app.ai.platform_strategy import InstagramStrategy, PlatformStrategy
+from app.ai.platform_strategy import InstagramStrategy, PlatformStrategy, XStrategy
 from app.ai.prompts import build_generation_prompt, build_system_instruction
 from app.ai.provider import AIProviderError, AIStructuredOutputError, LLMProvider
 from app.domain.enums import Language, Platform
@@ -89,6 +89,14 @@ def test_instagram_strategy_system_prompt():
     fragment = strategy.system_prompt_fragment()
     assert "Instagram" in fragment
     assert len(fragment) > 20
+
+
+def test_x_strategy_is_concise_and_distinct_from_instagram():
+    strategy = XStrategy()
+    assert strategy.platform() == Platform.X
+    assert strategy.content_rules()["caption_length"] == "1–280 characters"
+    assert strategy.content_rules()["hashtag_range"] == "0–2 relevant hashtags"
+    assert "X" in strategy.system_prompt_fragment()
 
 
 def test_platform_strategy_is_abstract():
@@ -184,6 +192,22 @@ async def test_generation_service_unsupported_platform(sample_brief: ContentBrie
         await service.generate_post(
             brief=sample_brief, platform=Platform.YOUTUBE
         )
+
+
+@pytest.mark.asyncio
+async def test_generation_service_selects_x_strategy_and_english_mandate(sample_instagram_result: GeneratedInstagramPost):
+    mock_provider = AsyncMock(spec=LLMProvider)
+    x_result = sample_instagram_result.model_copy(update={"platform": Platform.X, "language": Language.ENGLISH})
+    mock_provider.generate_structured.return_value = x_result
+    brief = ContentBrief(title="Test", genre="Drama", language=Language.ENGLISH, audience="Fans", objective="Awareness")
+
+    result = await GenerationService(provider=mock_provider).generate_post(brief=brief, platform=Platform.X)
+
+    assert result == x_result
+    kwargs = mock_provider.generate_structured.await_args.kwargs
+    assert "X" in kwargs["system_instruction"]
+    assert "English" in kwargs["system_instruction"]
+    assert "X" in kwargs["prompt"]
 
 
 @pytest.mark.asyncio

@@ -174,10 +174,10 @@ export const api = {
   getCampaign: (id: string, token: string) => request<Campaign>(`/campaigns/${id}`, {}, token),
   createCampaign: (input: CreateCampaignInput, token: string) =>
     request<Campaign>("/campaigns", { method: "POST", body: JSON.stringify(input) }, token),
-  generateCampaignContent: (id: string, token: string) =>
+  generateCampaignContent: (id: string, token: string, platform: "instagram" | "x" = "instagram", language: "bn" | "en" = "bn") =>
     request<PlatformPost>(`/campaigns/${id}/posts/generate`, {
       method: "POST",
-      body: JSON.stringify({ platform: "instagram", language: "bn" }),
+      body: JSON.stringify({ platform, language }),
     }, token),
   approvePost: (id: string, token: string) =>
     request<PlatformPost>(`/posts/${id}/approve`, { method: "POST" }, token),

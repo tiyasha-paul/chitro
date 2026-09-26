@@ -66,3 +66,33 @@ class InstagramStrategy(PlatformStrategy):
     def output_schema(self) -> type[BaseModel]:
         from app.schemas.content import GeneratedInstagramPost
         return GeneratedInstagramPost
+
+
+class XStrategy(PlatformStrategy):
+    """Generation strategy for concise, conversational X posts."""
+
+    def platform(self) -> Platform:
+        return Platform.X
+
+    def content_rules(self) -> dict[str, Any]:
+        return {
+            "platform": "X",
+            "caption_length": "1–280 characters",
+            "hashtag_range": "0–2 relevant hashtags",
+            "tone": "Concise, conversational, immediate",
+            "cta_style": "One direct, low-friction action",
+            "media_format": "Optional supporting visual direction",
+            "content_structure": "Sharp hook → concise context → direct CTA",
+            "audience_behaviour": "Fast-moving conversation and rapid scanning",
+        }
+
+    def system_prompt_fragment(self) -> str:
+        return (
+            "You are an expert X content strategist. Create concise, native social copy "
+            "designed for rapid reading and conversation. Do not recycle Instagram-style "
+            "long-form captions. Use at most two focused hashtags and a direct CTA."
+        )
+
+    def output_schema(self) -> type[BaseModel]:
+        from app.schemas.content import GeneratedInstagramPost
+        return GeneratedInstagramPost
