@@ -53,7 +53,6 @@ export function AppShell({ children }: { children: (session: AuthResponse) => Re
           </Link>
           <nav aria-label="Workspace navigation" className="hidden items-center gap-1 sm:flex">
             <Link className={`rounded-full px-4 py-2 text-sm font-semibold ${pathname === "/campaigns" ? "bg-[#f6e5dc] text-[#8f1029]" : "text-[#67474a] hover:bg-[#f6e5dc]"}`} href="/campaigns">Campaigns</Link>
-            <Link className={`rounded-full px-4 py-2 text-sm font-semibold ${pathname === "/campaigns/new" ? "bg-[#f6e5dc] text-[#8f1029]" : "text-[#67474a] hover:bg-[#f6e5dc]"}`} href="/campaigns/new">New brief</Link>
           </nav>
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block"><p className="max-w-40 truncate text-sm font-semibold">{session.user.display_name}</p><p className="max-w-40 truncate text-xs text-[#805d5f]">{session.workspace.name}</p></div>

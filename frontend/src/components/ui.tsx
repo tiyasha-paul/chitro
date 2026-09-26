@@ -41,9 +41,13 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const normalized = status.replaceAll("_", " ");
+  const labels: Record<string, string> = {
+    draft: "Draft", generated: "Creating", validated: "Creating", pending_approval: "Needs review",
+    approved: "Approved", rejected: "Needs changes", validation_failed: "Needs another attempt",
+    scheduled: "Scheduled", published: "Published",
+  };
   const tone = status.includes("failed") || status.includes("rejected") ? "danger" : status.includes("approved") || status.includes("published") ? "success" : status.includes("pending") ? "warm" : "neutral";
-  return <Badge tone={tone}>{normalized}</Badge>;
+  return <Badge tone={tone}>{labels[status] ?? status.replaceAll("_", " ")}</Badge>;
 }
 
 export function PageHeader({ eyebrow, title, children }: { eyebrow: string; title: string; children?: ReactNode }) {

@@ -18,8 +18,8 @@ function CampaignList({ token }: { token: string }) {
   useEffect(() => { void load(); }, [load]);
 
   if (campaigns === null && !error) return <LoadingState label="Finding your campaigns…" />;
-  if (error) return <EmptyState title="Your campaign room is unavailable" detail={error} action={<Button onClick={() => void load()}>Try again</Button>} />;
-  if (campaigns?.length === 0) return <EmptyState title="Start with a strong brief" detail="Create your first campaign to turn an editorial idea into a generated, reviewable content workflow." action={<Link href="/campaigns/new"><Button>Create campaign</Button></Link>} />;
+  if (error) return <EmptyState title="Campaigns are unavailable right now." detail={error} action={<Button onClick={() => void load()}>Try again</Button>} />;
+  if (campaigns?.length === 0) return <EmptyState title="Create your first campaign" detail="Start with a brief and turn it into platform-ready content." action={<Link href="/campaigns/new"><Button>New campaign</Button></Link>} />;
 
   return <div className="mt-8 grid gap-5 lg:grid-cols-2">{campaigns?.map((campaign) => {
     const posts = campaign.posts ?? [];
@@ -28,5 +28,5 @@ function CampaignList({ token }: { token: string }) {
 }
 
 export default function CampaignsPage() {
-  return <AppShell>{(session) => <><PageHeader eyebrow={`${session.workspace.name} · Campaign room`} title="Make the next story move."><Link href="/campaigns/new"><Button>Create campaign</Button></Link></PageHeader><CampaignList token={session.access_token} /></>}</AppShell>;
+  return <AppShell>{(session) => <><PageHeader eyebrow={session.workspace.name} title="Campaigns"><Link href="/campaigns/new"><Button>New campaign</Button></Link></PageHeader><CampaignList token={session.access_token} /></>}</AppShell>;
 }
