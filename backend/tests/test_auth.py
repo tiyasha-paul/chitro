@@ -164,3 +164,7 @@ async def test_authenticated_campaign_is_workspace_scoped(client: AsyncClient, b
 
     assert (await client.get(f"/api/campaigns/{campaign_id}", headers=first_headers)).status_code == 200
     assert (await client.get(f"/api/campaigns/{campaign_id}", headers=second_headers)).status_code == 404
+    listed = await client.get("/api/campaigns", headers=first_headers)
+    assert listed.status_code == 200
+    assert campaign_id in {campaign["id"] for campaign in listed.json()}
+    assert (await client.get("/api/campaigns", headers=second_headers)).json() == []

@@ -47,6 +47,23 @@ async def _ensure_campaign_access(
     await campaign_service.get_campaign(db, campaign_id, workspace_id=workspace.id)
 
 
+@router.get(
+    "",
+    response_model=list[CampaignResponse],
+    summary="List campaigns in the current workspace",
+)
+async def list_campaigns(
+    db: AsyncSession = Depends(get_db),
+    campaign_service: CampaignService = Depends(get_campaign_service),
+    current_user: User | None = Depends(get_optional_current_user),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> list[CampaignResponse]:
+    """List campaigns, scoped to the caller's workspace when authenticated."""
+    workspace = await auth_service.get_workspace_for_user(db, current_user.id) if current_user else None
+    campaigns = await campaign_service.list_campaigns(db, workspace_id=workspace.id if workspace else None)
+    return [CampaignResponse.model_validate(campaign) for campaign in campaigns]
+
+
 @router.post(
     "",
     response_model=CampaignResponse,

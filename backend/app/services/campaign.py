@@ -64,12 +64,11 @@ class CampaignService:
     async def list_campaigns(
         self,
         db: AsyncSession,
+        workspace_id: uuid.UUID | None = None,
     ) -> Sequence[Campaign]:
         """List all campaigns ordered by creation time descending."""
-        stmt = (
-            select(Campaign)
-            .order_by(Campaign.created_at.desc())
-            .options(selectinload(Campaign.posts))
-        )
+        stmt = select(Campaign).order_by(Campaign.created_at.desc()).options(selectinload(Campaign.posts))
+        if workspace_id is not None:
+            stmt = stmt.where(Campaign.workspace_id == workspace_id)
         result = await db.execute(stmt)
         return result.scalars().all()
