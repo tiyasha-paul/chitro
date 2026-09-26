@@ -12,6 +12,7 @@ from app.ai.provider import AIProviderError
 from app.api.campaigns import router as campaigns_router
 from app.api.auth import router as auth_router
 from app.api.posts import router as posts_router
+from app.api.workspaces import router as workspaces_router
 from app.database import init_db
 from app.config import get_cors_origins
 from app.domain.exceptions import (
@@ -112,6 +113,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="/api")
     app.include_router(campaigns_router, prefix="/api")
     app.include_router(posts_router, prefix="/api")
+    app.include_router(workspaces_router, prefix="/api")
 
     @app.get("/health", tags=["System"])
     async def health_check() -> dict[str, str]:

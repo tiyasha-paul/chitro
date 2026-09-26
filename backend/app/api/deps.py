@@ -12,7 +12,7 @@ from app.adapters import ChannelAdapter, MockInstagramAdapter
 from app.ai.gemini import GeminiProvider
 from app.ai.provider import LLMProvider
 from app.database import get_db_session
-from app.domain.models import Campaign, PlatformPost, User, Workspace
+from app.domain.models import Campaign, PlatformPost, User, Workspace, WorkspaceMember
 from app.services.analytics import AnalyticsService
 from app.services.approval import ApprovalService
 from app.services.campaign import CampaignService
@@ -22,6 +22,7 @@ from app.services.reporting import ReportingService
 from app.services.auth import AuthService, InvalidTokenError, decode_access_token
 from app.services.validation import ValidationService
 from app.services.workflow import ContentWorkflowService
+from app.services.workspace import WorkspaceService
 
 # Default module-level mock adapter instance
 _default_instagram_adapter: ChannelAdapter = MockInstagramAdapter()
@@ -64,6 +65,11 @@ def get_campaign_service() -> CampaignService:
 def get_auth_service() -> AuthService:
     """Provide authentication service."""
     return AuthService()
+
+
+def get_workspace_service() -> WorkspaceService:
+    """Provide WorkspaceService."""
+    return WorkspaceService()
 
 
 async def get_optional_current_user(
@@ -142,6 +148,19 @@ async def get_selected_workspace_post(
         # workspace's resources.
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
     return post
+
+
+async def get_workspace_membership_for_path(
+    workspace_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> WorkspaceMember:
+    """Require membership in the workspace identified by the route parameter."""
+    membership = await auth_service.get_workspace_membership(db, current_user.id, workspace_id)
+    if membership is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Workspace membership required")
+    return membership
 
 
 def get_approval_service() -> ApprovalService:
