@@ -12,6 +12,7 @@ from app.ai.provider import AIProviderError
 from app.api.campaigns import router as campaigns_router
 from app.api.posts import router as posts_router
 from app.domain.exceptions import (
+    CitationValidationError,
     InvalidStateTransitionError,
     PostNotPublishedError,
     ResourceNotFoundError,
@@ -86,6 +87,16 @@ def create_app() -> FastAPI:
             status_code=status.HTTP_502_BAD_GATEWAY,
             content={"detail": "Publishing channel adapter error", "error": str(exc), "provider": exc.provider},
         )
+
+    @app.exception_handler(CitationValidationError)
+    async def citation_validation_error_handler(
+        request: Request, exc: CitationValidationError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            content={"detail": "AI report citation validation failed", "error": str(exc)},
+        )
+
 
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:

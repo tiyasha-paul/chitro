@@ -11,13 +11,16 @@ from app.api.deps import (
     get_campaign_service,
     get_db,
     get_workflow_service,
+    get_reporting_service,
 )
 from app.schemas.analytics import AnalyticsComparisonResponse, InsightResponse
 from app.schemas.campaigns import CampaignResponse, CreateCampaignRequest
 from app.schemas.posts import GeneratePostRequest, PlatformPostResponse
+from app.schemas.reports import PerformanceReport, WeeklyReportRequest
 from app.services.analytics import AnalyticsService
 from app.services.campaign import CampaignService
 from app.services.workflow import ContentWorkflowService
+from app.services.reporting import ReportingService
 
 router = APIRouter(prefix="/campaigns", tags=["Campaigns & Analytics"])
 
@@ -137,3 +140,23 @@ async def get_campaign_insights(
     """Retrieve all persisted insights for this campaign."""
     insights = await analytics_service.get_campaign_insights(db, campaign_id)
     return [InsightResponse.model_validate(ins) for ins in insights]
+
+
+@router.post(
+    "/{campaign_id}/reports/weekly",
+    response_model=PerformanceReport,
+    summary="Generate an evidence-backed weekly performance report",
+)
+async def generate_weekly_report(
+    campaign_id: uuid.UUID,
+    request: WeeklyReportRequest = WeeklyReportRequest(),
+    db: AsyncSession = Depends(get_db),
+    reporting_service: ReportingService = Depends(get_reporting_service),
+) -> PerformanceReport:
+    """Generate a deterministic-citation-validated performance report."""
+    return await reporting_service.generate_weekly_report(
+        db=db,
+        campaign_id=campaign_id,
+        start=request.start,
+        end=request.end,
+    )

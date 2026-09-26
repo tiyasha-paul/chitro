@@ -14,4 +14,7 @@ __all__ = [
     "ContentWorkflowService",
     "PublishingService",
     "AnalyticsService",
+    "ReportingService",
 ]
+
+from app.services.reporting import ReportingService

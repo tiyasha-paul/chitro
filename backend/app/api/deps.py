@@ -13,6 +13,7 @@ from app.services.approval import ApprovalService
 from app.services.campaign import CampaignService
 from app.services.generation import GenerationService
 from app.services.publishing import PublishingService
+from app.services.reporting import ReportingService
 from app.services.validation import ValidationService
 from app.services.workflow import ContentWorkflowService
 
@@ -79,3 +80,10 @@ def get_publishing_service(
 def get_analytics_service() -> AnalyticsService:
     """Provide AnalyticsService."""
     return AnalyticsService()
+
+
+def get_reporting_service(
+    provider: LLMProvider = Depends(get_llm_provider),
+) -> ReportingService:
+    """Provide ReportingService."""
+    return ReportingService(provider=provider)

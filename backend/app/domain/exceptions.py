@@ -21,3 +21,7 @@ class PostNotPublishedError(DomainError):
         super().__init__(
             f"Cannot record metrics for post '{post_id}' in status '{current_status}'. Post must be published."
         )
+
+
+class CitationValidationError(DomainError):
+    """Raised when an AI-generated report contains invalid or unsupported citations."""

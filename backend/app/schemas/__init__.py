@@ -35,3 +35,42 @@ __all__ = [
     "EvidenceItem",
     "InsightResponse",
 ]
+
+
+from app.schemas.reports import (
+    CampaignContext,
+    Citation,
+    DeterministicAggregates,
+    InsightContext,
+    MetricContext,
+    PerformanceReport,
+    PublishedPostContext,
+    ReportClaim,
+    ReportContext,
+    ReportInsightContext,
+    ReportMetricSnapshot,
+    ReportPeriod,
+    ReportPostContext,
+    ReportRecommendation,
+    ReportSection,
+    WeeklyReportRequest,
+)
+
+__all__ += [
+    "CampaignContext",
+    "Citation",
+    "DeterministicAggregates",
+    "InsightContext",
+    "MetricContext",
+    "PerformanceReport",
+    "PublishedPostContext",
+    "ReportClaim",
+    "ReportContext",
+    "ReportInsightContext",
+    "ReportMetricSnapshot",
+    "ReportPeriod",
+    "ReportPostContext",
+    "ReportRecommendation",
+    "ReportSection",
+    "WeeklyReportRequest",
+]

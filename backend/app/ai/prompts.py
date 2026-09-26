@@ -95,3 +95,36 @@ def build_generation_prompt(
     )
 
     return "\n".join(sections)
+
+
+def build_reporting_system_instruction() -> str:
+    """Build the system instruction for evidence-backed performance reports."""
+    return """You are generating an evidence-backed performance report.
+
+ALL specific factual or quantitative assertions MUST appear exclusively in the `claims[]` array.
+Every such claim must include precise citations to the supplied evidence.
+
+The `executive_summary` and `section.summary` fields are high-level narrative synthesis only.
+DO NOT include specific numeric metrics, percentages, counts, or other precise factual assertions
+in `executive_summary` or `section.summary`. Specific evidence belongs in claims[] and is never in summary prose.
+
+Recommendations must be grounded only in cited claim IDs and must not introduce unsupported facts.
+Do not invent metrics, posts, snapshots, IDs, or causal explanations.
+"""
+
+
+def build_reporting_prompt(context: Any) -> str:
+    """Build the user prompt from the authoritative reporting context."""
+    return f"""Generate a performance report from the following authoritative evidence.
+
+REPORT CONTEXT:
+{context.model_dump_json(indent=2)}
+
+Requirements:
+- Use only information present in the supplied context.
+- Put every specific factual or quantitative assertion in claims[] with precise citations.
+- Keep executive_summary and section.summary as high-level narrative synthesis.
+- Ground recommendations in existing claim IDs.
+- Do not invent evidence.
+- Return structured JSON matching the requested schema.
+"""
