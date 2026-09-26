@@ -18,6 +18,7 @@ from app.domain.state_machine import transition_post
 from app.schemas.briefs import ContentBrief
 from app.services.generation import GenerationService
 from app.services.validation import ValidationService
+from app.validation.media import build_mock_media_asset, validate_media_asset
 
 
 class ContentWorkflowService:
@@ -135,9 +136,14 @@ class ContentWorkflowService:
         post.caption = getattr(generated, "caption", None)
         post.hashtags = getattr(generated, "hashtags", None)
         post.cta = getattr(generated, "cta", None)
+        media_asset = getattr(generated, "media_asset", None)
         media_dir = getattr(generated, "media_direction", None)
         post.media_spec = (
-            media_dir.model_dump() if hasattr(media_dir, "model_dump") else media_dir
+            media_asset.model_dump()
+            if hasattr(media_asset, "model_dump")
+            else media_asset
+            if media_asset is not None
+            else build_mock_media_asset(getattr(media_dir, "aspect_ratio", None), post.id)
         )
 
         # 6. Deterministic platform validation
@@ -145,14 +151,16 @@ class ContentWorkflowService:
             content=generated,
             platform=platform,
         )
+        media_validation = validate_media_asset(post.media_spec, platform)
+        validation_errors = [*validation_result.errors, *media_validation.errors]
 
         # 7. Apply deterministic transitions
-        if validation_result.valid:
+        if not validation_errors:
             post.validation_errors = None
             transition_post(post, PostStatus.VALIDATED)
             transition_post(post, PostStatus.PENDING_APPROVAL)
         else:
-            post.validation_errors = [e.model_dump() for e in validation_result.errors]
+            post.validation_errors = [e.model_dump() for e in validation_errors]
             transition_post(post, PostStatus.VALIDATION_FAILED)
 
         await db.commit()
@@ -216,9 +224,14 @@ class ContentWorkflowService:
         post.caption = getattr(generated, "caption", None)
         post.hashtags = getattr(generated, "hashtags", None)
         post.cta = getattr(generated, "cta", None)
+        media_asset = getattr(generated, "media_asset", None)
         media_dir = getattr(generated, "media_direction", None)
         post.media_spec = (
-            media_dir.model_dump() if hasattr(media_dir, "model_dump") else media_dir
+            media_asset.model_dump()
+            if hasattr(media_asset, "model_dump")
+            else media_asset
+            if media_asset is not None
+            else build_mock_media_asset(getattr(media_dir, "aspect_ratio", None), post.id)
         )
 
         # 6. Validate new attempt
@@ -226,14 +239,16 @@ class ContentWorkflowService:
             content=generated,
             platform=target_platform,
         )
+        media_validation = validate_media_asset(post.media_spec, target_platform)
+        validation_errors = [*validation_result.errors, *media_validation.errors]
 
         # 7. Apply deterministic transitions
-        if validation_result.valid:
+        if not validation_errors:
             post.validation_errors = None
             transition_post(post, PostStatus.VALIDATED)
             transition_post(post, PostStatus.PENDING_APPROVAL)
         else:
-            post.validation_errors = [e.model_dump() for e in validation_result.errors]
+            post.validation_errors = [e.model_dump() for e in validation_errors]
             transition_post(post, PostStatus.VALIDATION_FAILED)
 
         await db.commit()

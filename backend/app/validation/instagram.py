@@ -51,6 +51,14 @@ class InstagramSpec(PlatformSpec):
         return {"image", "video", "carousel", "photo"}
 
     @property
+    def allowed_mime_types(self) -> set[str]:
+        return {"image/jpeg", "image/png", "video/mp4"}
+
+    @property
+    def max_media_size_bytes(self) -> int:
+        return 100 * 1024 * 1024
+
+    @property
     def require_cta(self) -> bool:
         return True
 

@@ -6,6 +6,7 @@ from app.validation.platform_spec import (
     ValidationErrorDetail,
     ValidationResult,
 )
+from app.validation.media import build_mock_media_asset, ensure_valid_media_asset, validate_media_asset
 
 __all__ = [
     "PlatformSpec",
@@ -15,4 +16,7 @@ __all__ = [
     "XSpec",
     "ValidationEngine",
     "validate_post",
+    "build_mock_media_asset",
+    "validate_media_asset",
+    "ensure_valid_media_asset",
 ]

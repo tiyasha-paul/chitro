@@ -12,6 +12,7 @@ from app.domain.enums import Platform, PostStatus
 from app.domain.exceptions import ResourceNotFoundError
 from app.domain.models import PlatformPost
 from app.domain.state_machine import transition_post
+from app.validation.media import ensure_valid_media_asset
 
 
 class PublishingService:
@@ -39,6 +40,8 @@ class PublishingService:
 
         if post is None:
             raise ResourceNotFoundError("PlatformPost", str(post_id))
+
+        ensure_valid_media_asset(post.media_spec, Platform(post.platform))
 
         # Ensure timestamp is timezone-aware UTC
         if scheduled_at.tzinfo is None:
@@ -84,6 +87,8 @@ class PublishingService:
         # Idempotency guard: if already published, return existing entity
         if post.status == PostStatus.PUBLISHED.value:
             return post
+
+        ensure_valid_media_asset(post.media_spec, Platform(post.platform))
 
         # Check and perform initial transition to SCHEDULED if currently APPROVED
         if post.status == PostStatus.APPROVED.value:

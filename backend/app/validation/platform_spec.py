@@ -78,6 +78,18 @@ class PlatformSpec(ABC):
 
     @property
     @abstractmethod
+    def allowed_mime_types(self) -> set[str]:
+        """Set of MIME types accepted by the platform adapter."""
+        ...
+
+    @property
+    @abstractmethod
+    def max_media_size_bytes(self) -> int:
+        """Maximum accepted size of one media asset in bytes."""
+        ...
+
+    @property
+    @abstractmethod
     def require_cta(self) -> bool:
         """Whether a call-to-action is mandatory."""
         ...

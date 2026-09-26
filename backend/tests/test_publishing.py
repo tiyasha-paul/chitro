@@ -45,6 +45,17 @@ from app.services.auth import AuthService, create_access_token
 T = TypeVar("T", bound=BaseModel)
 
 
+def valid_media_spec() -> dict[str, object]:
+    return {
+        "media_type": "image",
+        "mime_type": "image/jpeg",
+        "width": 1080,
+        "height": 1350,
+        "size_bytes": 1_048_576,
+        "asset_url": "mock://tests/asset.jpg",
+    }
+
+
 # --- Test Fakes & Fixtures ---
 
 class FakeLLMProvider(LLMProvider):
@@ -137,7 +148,7 @@ async def test_mock_instagram_adapter_success():
     payload = PublishPayload(
         post_id=post_id,
         caption="টেস্ট ক্যাপশন",
-        media_spec={"format": "video", "aspect_ratio": "4:5"},
+        media_spec={"media_type": "video", "mime_type": "video/mp4", "width": 1080, "height": 1920, "size_bytes": 1_048_576},
         hashtags=["#হইচই", "#বাংলা", "#সিনেমা", "#নতুন", "#সিরিজ"],
         cta="দেখুন",
         platform="instagram",
@@ -161,6 +172,7 @@ async def test_mock_instagram_adapter_failure():
     payload = PublishPayload(
         post_id=uuid.uuid4(),
         caption="টেস্ট",
+        media_spec=valid_media_spec(),
         platform="instagram",
     )
 
@@ -198,6 +210,7 @@ async def test_service_schedule_approved_post():
             language=Language.BENGALI.value,
             status=PostStatus.APPROVED.value,
             caption="অনুমোদিত পোস্ট",
+            media_spec=valid_media_spec(),
         )
         db.add(post)
         await db.commit()
@@ -224,6 +237,7 @@ async def test_service_schedule_past_time_rejected():
             language=Language.BENGALI.value,
             status=PostStatus.APPROVED.value,
             caption="অনুমোদিত",
+            media_spec=valid_media_spec(),
         )
         db.add(post)
         await db.commit()
@@ -247,6 +261,7 @@ async def test_service_schedule_unapproved_post_rejected():
             language=Language.BENGALI.value,
             status=PostStatus.PENDING_APPROVAL.value,
             caption="অপেক্ষারত",
+            media_spec=valid_media_spec(),
         )
         db.add(post)
         await db.commit()
@@ -282,6 +297,7 @@ async def test_service_publish_from_scheduled():
             status=PostStatus.SCHEDULED.value,
             scheduled_at=future_time,
             caption="শিডিউল করা পোস্ট",
+            media_spec=valid_media_spec(),
         )
         db.add(post)
         await db.commit()
@@ -312,6 +328,7 @@ async def test_service_direct_publish_from_approved():
             language=Language.BENGALI.value,
             status=PostStatus.APPROVED.value,
             caption="সরাসরি পাবলিশ হবে",
+            media_spec=valid_media_spec(),
         )
         db.add(post)
         await db.commit()
@@ -371,6 +388,7 @@ async def test_service_publish_unapproved_post_rejected():
             platform=Platform.INSTAGRAM.value,
             language=Language.BENGALI.value,
             status=PostStatus.DRAFT.value,
+            media_spec=valid_media_spec(),
         )
         db.add(post)
         await db.commit()
@@ -395,6 +413,7 @@ async def test_service_adapter_failure_leaves_post_unmodified():
             language=Language.BENGALI.value,
             status=PostStatus.SCHEDULED.value,
             caption="ব্যর্থ হবে না নিশ্চিত করুন",
+            media_spec=valid_media_spec(),
         )
         db.add(post)
         await db.commit()

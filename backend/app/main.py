@@ -18,6 +18,7 @@ from app.config import get_cors_origins
 from app.domain.exceptions import (
     CitationValidationError,
     InvalidStateTransitionError,
+    MediaValidationError,
     PostNotPublishedError,
     ResourceNotFoundError,
 )
@@ -76,6 +77,13 @@ def create_app() -> FastAPI:
                 "post_id": exc.post_id,
                 "current_status": exc.current_status,
             },
+        )
+
+    @app.exception_handler(MediaValidationError)
+    async def media_validation_error_handler(request: Request, exc: MediaValidationError) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"detail": str(exc), "errors": exc.errors},
         )
 
     @app.exception_handler(AIProviderError)

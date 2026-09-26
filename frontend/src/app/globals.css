@@ -3,6 +3,25 @@
 :root {
   --background: #f8f1e9;
   --foreground: #321d20;
+  --surface: #fffaf3;
+  --surface-raised: #fffdf9;
+  --surface-highlight: #fff8e8;
+  --accent: #8f1029;
+  --accent-hover: #700b20;
+  --accent-light: #f6e5dc;
+  --border: #ead9cf;
+  --border-strong: #d8c6bc;
+  --text-primary: #321d20;
+  --text-secondary: #77595a;
+  --text-tertiary: #805d5f;
+  --text-muted: #886a69;
+  --text-label: #493033;
+  --success: #285f35;
+  --success-bg: #dff0df;
+  --danger: #861a31;
+  --danger-bg: #f7dce0;
+  --warning-bg: #fff0b8;
+  --warning-text: #6d4a00;
 }
 
 @theme inline {
@@ -10,6 +29,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+* {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+*:where(:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 body {
@@ -24,7 +54,7 @@ h1, h2, h3, .font-serif {
 }
 
 .eyebrow {
-  color: #8f1029;
+  color: var(--accent);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -34,18 +64,19 @@ h1, h2, h3, .font-serif {
 .field-label {
   display: block;
   margin-bottom: 0.45rem;
-  color: #493033;
+  color: var(--text-label);
   font-size: 0.85rem;
   font-weight: 700;
 }
 
 .field {
   width: 100%;
-  border: 1px solid #d8c6bc;
-  border-radius: 0.85rem;
-  background: #fffdf9;
-  color: #321d20;
-  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
   outline: none;
 }
 
@@ -54,6 +85,30 @@ h1, h2, h3, .font-serif {
 }
 
 .field:focus {
-  border-color: #8f1029;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(143, 16, 41, 0.14);
+}
+
+select.field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' fill='none' stroke='%23805d5f' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }

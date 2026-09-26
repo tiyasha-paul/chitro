@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from app.domain.enums import Language, Platform
+from app.schemas.media import MediaAssetSpec
 
 
 class MediaDirection(BaseModel):
@@ -27,4 +28,8 @@ class GeneratedInstagramPost(BaseModel):
     cta: str = Field(..., description="Call-to-action text")
     media_direction: MediaDirection = Field(
         ..., description="Visual/media direction for the post"
+    )
+    media_asset: MediaAssetSpec | None = Field(
+        default=None,
+        description="Optional concrete asset metadata when an asset is available",
     )

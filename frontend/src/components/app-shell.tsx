@@ -1,66 +1,179 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-
 import { api, ApiError, type AuthResponse } from "@/lib/api";
 import { clearSession, getSession, saveSession } from "@/lib/session";
 import { Button, LoadingState } from "./ui";
 
-export function AppShell({ children }: { children: (session: AuthResponse) => ReactNode }) {
+interface AppShellProps {
+  children: (session: AuthResponse) => ReactNode;
+}
+
+export function AppShell({ children }: AppShellProps) {
+  const [session, setSession] = useState<AuthResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const [session, setSession] = useState<AuthResponse | null>(null);
-  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const stored = getSession();
-    if (!stored) {
-      router.replace("/login");
-      return;
-    }
-    api.me(stored.access_token)
-      .then((verified) => {
-        saveSession(verified);
-        setSession(verified);
-      })
-      .catch((error: unknown) => {
-        if (error instanceof ApiError && error.status === 0) {
-          setSession(stored);
+    async function checkAuth() {
+      try {
+        const stored = getSession();
+        if (!stored) {
+          router.push("/login");
           return;
         }
-        clearSession();
-        router.replace("/login");
-      })
-      .finally(() => setChecking(false));
+
+        try {
+          const fresh = await api.me();
+          saveSession(fresh);
+          setSession(fresh);
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 0) {
+            // Network error (status 0), fallback to stored session
+            setSession(stored);
+          } else {
+            // Unauthenticated or other error, clear and redirect
+            clearSession();
+            router.push("/login");
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    checkAuth();
   }, [router]);
 
-  function logout() {
-    clearSession();
-    router.replace("/login");
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } finally {
+      clearSession();
+      router.push("/login");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f8f1e9] flex items-center justify-center">
+        <LoadingState text="Loading session..." />
+      </div>
+    );
   }
 
-  if (checking || !session) return <main className="min-h-screen bg-[#f8f1e9]"><LoadingState label="Opening your workspace…" /></main>;
+  if (!session) {
+    return null;
+  }
+
+  const navLinks = [
+    { name: "Campaigns", href: "/campaigns" },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#f8f1e9] text-[#321d20]">
-      <header className="border-b border-[#ead9cf] bg-[#fffaf3]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <Link href="/campaigns" className="group flex items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8f1029]">
-            <span className="grid size-10 place-items-center rounded-2xl bg-[#8f1029] font-serif text-xl font-bold text-[#fff4dd]">চি</span>
-            <span><strong className="block font-serif text-xl leading-5">Chitro</strong><span className="text-xs text-[#805d5f]">Content operations</span></span>
-          </Link>
-          <nav aria-label="Workspace navigation" className="hidden items-center gap-1 sm:flex">
-            <Link className={`rounded-full px-4 py-2 text-sm font-semibold ${pathname === "/campaigns" ? "bg-[#f6e5dc] text-[#8f1029]" : "text-[#67474a] hover:bg-[#f6e5dc]"}`} href="/campaigns">Campaigns</Link>
+    <div className="min-h-screen bg-[#f8f1e9] flex flex-col lg:flex-row text-[#321d20]">
+      {/* Mobile Header */}
+      <header className="lg:hidden bg-[#fffaf3] border-b border-[#ead9cf] p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-bold text-[#8f1029]">চী</span>
+          <span className="font-semibold text-lg text-[#321d20]">Chitro</span>
+        </div>
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-2 rounded-md hover:bg-[#f6e5dc] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8f1029] text-[#8f1029]"
+          aria-expanded={mobileMenuOpen}
+          aria-label="Toggle mobile menu"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+          </svg>
+        </button>
+      </header>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-[#fffaf3] border-b border-[#ead9cf] p-4 flex flex-col gap-4 shadow-sm">
+          <nav aria-label="Mobile Navigation" className="flex flex-col gap-2">
+            {navLinks.map((link) => {
+              const isActive = pathname.startsWith(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-4 py-2 rounded-md font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8f1029] transition-colors ${
+                    isActive
+                      ? "bg-[#f6e5dc] text-[#8f1029]"
+                      : "text-[#321d20] hover:bg-[#f6e5dc] hover:text-[#8f1029]"
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
           </nav>
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block"><p className="max-w-40 truncate text-sm font-semibold">{session.user.display_name}</p><p className="max-w-40 truncate text-xs text-[#805d5f]">{session.workspace.name}</p></div>
-            <Button variant="quiet" className="px-3" onClick={logout}>Log out</Button>
+          <div className="pt-4 border-t border-[#ead9cf]">
+            <div className="font-medium text-[#321d20] mb-1 px-2">{session.user.display_name}</div>
+            <div className="text-sm text-[#805d5f] mb-4 px-2">{session.workspace.name}</div>
+            <Button onClick={handleLogout} className="w-full">
+              Log out
+            </Button>
           </div>
         </div>
-      </header>
-      <main className="mx-auto max-w-7xl px-5 py-9 sm:px-8">{children(session)}</main>
+      )}
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-56 flex-col bg-[#fffaf3] border-r border-[#ead9cf] fixed inset-y-0 left-0 z-10">
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-1">
+            <span className="text-3xl font-bold text-[#8f1029]">চী</span>
+            <span className="text-xl font-bold tracking-tight text-[#321d20]">Chitro</span>
+          </div>
+          <p className="text-xs text-[#67474a] font-medium tracking-wide uppercase">Content operations</p>
+        </div>
+
+        <nav aria-label="Desktop Navigation" className="flex-1 px-4 mt-6">
+          <ul className="space-y-2">
+            {navLinks.map((link) => {
+              const isActive = pathname.startsWith(link.href);
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`block px-4 py-2 rounded-md font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8f1029] transition-colors ${
+                      isActive
+                        ? "bg-[#f6e5dc] text-[#8f1029]"
+                        : "text-[#321d20] hover:bg-[#f6e5dc] hover:text-[#8f1029]"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <div className="p-4 border-t border-[#ead9cf]">
+          <div className="mb-4 px-2">
+            <div className="font-medium text-[#321d20] truncate">{session.user.display_name}</div>
+            <div className="text-sm text-[#805d5f] truncate">{session.workspace.name}</div>
+          </div>
+          <Button onClick={handleLogout} className="w-full">
+            Log out
+          </Button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-h-screen lg:ml-56">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {children(session)}
+        </main>
+      </div>
     </div>
   );
 }

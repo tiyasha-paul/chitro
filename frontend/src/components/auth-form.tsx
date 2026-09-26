@@ -1,52 +1,170 @@
 "use client";
-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-
 import { api, ApiError } from "@/lib/api";
 import { saveSession } from "@/lib/session";
 import { Button, Input } from "./ui";
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+interface AuthFormProps {
+  mode: "login" | "register";
+}
+
+export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const isRegister = mode === "register";
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
     setSubmitting(true);
+
     try {
-      const session = isRegister
-        ? await api.register({ email, password, ...(displayName.trim() ? { display_name: displayName.trim() } : {}) })
-        : await api.login({ email, password });
-      saveSession(session);
+      if (mode === "register") {
+        const res = await api.register({
+          email,
+          password,
+          display_name: displayName || undefined,
+        });
+        saveSession(res);
+      } else {
+        const res = await api.login({ email, password });
+        saveSession(res);
+      }
       router.replace("/campaigns");
-    } catch (caught: unknown) {
-      setError(caught instanceof ApiError ? caught.message : "We couldn’t sign you in. Please try again.");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("An unexpected error occurred");
+      }
     } finally {
       setSubmitting(false);
     }
-  }
+  };
 
   return (
-    <main className="grid min-h-screen bg-[#f8f1e9] lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="hidden bg-[#8f1029] p-12 text-[#fff4dd] lg:flex lg:flex-col lg:justify-between"><div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-[#fff0b8] font-serif text-xl font-bold text-[#8f1029]">চি</span><strong className="font-serif text-2xl">Chitro</strong></div><div><p className="eyebrow text-[#ffd7c5]">Editorial operations, in motion</p><h1 className="mt-4 max-w-xl text-6xl leading-[1.02]">From the first brief to the next sharp insight.</h1><p className="mt-6 max-w-lg text-lg leading-8 text-[#ffd7c5]">A working room for campaigns, content, approvals, and the decisions behind them.</p></div><p className="text-sm text-[#ffd7c5]">Built for teams making culture move.</p></section>
-      <section className="flex items-center justify-center px-5 py-12 sm:px-10"><div className="w-full max-w-md"><Link href="/" className="font-serif text-2xl text-[#8f1029] lg:hidden">Chitro</Link><p className="eyebrow mt-10">Welcome to your workspace</p><h2 className="mt-2 text-4xl text-[#321d20]">{isRegister ? "Create your workspace" : "Pick up where you left off"}</h2><p className="mt-3 text-[#77595a]">{isRegister ? "Set up your workspace and start creating campaigns." : "Sign in to manage your campaigns and content."}</p>
-        <form className="mt-8 space-y-5" onSubmit={submit}>
-          {isRegister && <label className="block"><span className="field-label">Your name <span className="font-normal text-[#9a7676]">(optional)</span></span><Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" /></label>}
-          <label className="block"><span className="field-label">Email</span><Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
-          <label className="block"><span className="field-label">Password</span><Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={isRegister ? "new-password" : "current-password"} minLength={isRegister ? 8 : 1} required /></label>
-          {error && <p role="alert" className="rounded-xl bg-[#f7dce0] px-4 py-3 text-sm text-[#861a31]">{error}</p>}
-          <Button type="submit" className="w-full" disabled={submitting}>{submitting ? "Working…" : isRegister ? "Create workspace" : "Sign in"}</Button>
-        </form>
-        <p className="mt-6 text-center text-sm text-[#77595a]">{isRegister ? "Already have a workspace? " : "New to Chitro? "}<Link className="font-semibold text-[#8f1029] underline underline-offset-4" href={isRegister ? "/login" : "/register"}>{isRegister ? "Sign in" : "Create an account"}</Link></p>
-      </div></section>
-    </main>
+    <div className="flex min-h-screen">
+      {/* Left Panel */}
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-[#8f1029] text-[#fff4dd]">
+        <div>
+          <div className="flex items-center gap-3 mb-16">
+            <div className="bg-[#fff4dd] text-[#8f1029] w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xl leading-none pt-1">
+              চী
+            </div>
+            <span className="font-serif text-2xl font-semibold tracking-tight">Chitro</span>
+          </div>
+          <div className="max-w-md">
+            <div className="text-xs font-medium uppercase tracking-widest text-[#fff4dd]/70 mb-4">
+              Editorial operations, in motion
+            </div>
+            <h1 className="text-5xl font-serif leading-[1.1] mb-6">
+              From the first brief to the next sharp insight.
+            </h1>
+            <p className="text-lg text-[#fff4dd]/80 leading-relaxed">
+              A working room for campaigns, content, approvals, and the decisions behind them.
+            </p>
+          </div>
+        </div>
+        <div className="text-sm text-[#fff4dd]/60">
+          Built for teams making culture move.
+        </div>
+      </div>
+
+      {/* Right Panel */}
+      <div className="flex-1 flex flex-col justify-center items-center p-8 bg-surface">
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <div className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">
+              Welcome to your workspace
+            </div>
+            <h2 className="text-3xl font-serif">
+              {mode === "register" ? "Create your workspace" : "Pick up where you left off"}
+            </h2>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="p-3 bg-danger/10 text-danger rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+
+            {mode === "register" && (
+              <div className="space-y-1.5">
+                <label className="field-label" htmlFor="displayName">
+                  Display Name (Optional)
+                </label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="How should we call you?"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="field-label" htmlFor="email">
+                Email Address
+              </label>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="field-label" htmlFor="password">
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              loading={submitting}
+            >
+              {mode === "register" ? "Create Account" : "Sign In"}
+            </Button>
+          </form>
+
+          <div className="mt-8 text-center text-sm text-text-muted">
+            {mode === "register" ? (
+              <>
+                Already have an account?{" "}
+                <Link href="/login" className="text-text hover:text-brand font-medium underline underline-offset-4">
+                  Sign in
+                </Link>
+              </>
+            ) : (
+              <>
+                Don't have an account?{" "}
+                <Link href="/register" className="text-text hover:text-brand font-medium underline underline-offset-4">
+                  Create one
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -174,7 +174,7 @@ async def test_generate_post_reaches_pending_approval(
     assert len(data["hashtags"]) >= 5
     assert data["hook"] is not None
     assert data["cta"] is not None
-    assert data["media_spec"]["aspect_ratio"] == "4:5"
+    assert (data["media_spec"]["width"], data["media_spec"]["height"]) == (1080, 1350)
 
 
 @pytest.mark.asyncio

@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 
 from app.adapters.channel import ChannelAdapter, ChannelAdapterError, PublishPayload, PublishResult
+from app.domain.enums import Platform
+from app.validation.media import ensure_valid_media_asset
 
 
 class MockInstagramAdapter(ChannelAdapter):
@@ -19,6 +21,7 @@ class MockInstagramAdapter(ChannelAdapter):
 
     async def publish(self, payload: PublishPayload) -> PublishResult:
         """Simulate publishing an approved post to Instagram."""
+        ensure_valid_media_asset(payload.media_spec, Platform.INSTAGRAM)
         if self.simulate_failure:
             raise ChannelAdapterError(self.failure_message, provider="mock_instagram")
 
@@ -27,9 +30,7 @@ class MockInstagramAdapter(ChannelAdapter):
         now = datetime.now(timezone.utc)
         url = f"https://mock-instagram.chitro.local/p/{external_id}"
 
-        media_format = "image"
-        if payload.media_spec and isinstance(payload.media_spec, dict):
-            media_format = payload.media_spec.get("format", "image")
+        media_format = payload.media_spec["media_type"]
 
         return PublishResult(
             provider="mock_instagram",

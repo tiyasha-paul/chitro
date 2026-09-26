@@ -25,3 +25,11 @@ class PostNotPublishedError(DomainError):
 
 class CitationValidationError(DomainError):
     """Raised when an AI-generated report contains invalid or unsupported citations."""
+
+
+class MediaValidationError(DomainError):
+    """Raised when media metadata violates deterministic platform constraints."""
+
+    def __init__(self, errors: list[dict]):
+        self.errors = errors
+        super().__init__("Media asset violates platform constraints.")
