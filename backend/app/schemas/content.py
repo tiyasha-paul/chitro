@@ -3,8 +3,17 @@
 from pydantic import BaseModel, Field
 
 from app.domain.enums import Language, Platform
-from app.schemas.media import MediaAssetSpec
 
+class GeneratedMediaAsset(BaseModel):
+    """Media metadata that may be returned by the LLM."""
+
+    media_type: str = Field(..., description="Asset type, such as image or video")
+    mime_type: str = Field(..., description="Asset MIME type")
+    width: int = Field(..., description="Asset width in pixels")
+    height: int = Field(..., description="Asset height in pixels")
+    size_bytes: int = Field(..., description="Asset size in bytes")
+    asset_url: str | None = Field(default=None, description="Optional asset URL")
+    storage_key: str | None = Field(default=None, description="Optional storage key")
 
 class MediaDirection(BaseModel):
     """AI-generated media/visual direction for accompanying imagery."""
@@ -29,7 +38,7 @@ class GeneratedInstagramPost(BaseModel):
     media_direction: MediaDirection = Field(
         ..., description="Visual/media direction for the post"
     )
-    media_asset: MediaAssetSpec | None = Field(
-        default=None,
-        description="Optional concrete asset metadata when an asset is available",
+    media_asset: GeneratedMediaAsset | None = Field(
+    default=None,
+    description="Optional concrete asset metadata when an asset is available",
     )
