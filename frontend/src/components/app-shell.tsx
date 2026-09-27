@@ -166,8 +166,8 @@ export function AppShell({ children }: AppShellProps) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen lg:ml-56">
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 flex flex-col min-h-screen lg:ml-56 min-w-0">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
           {typeof children === "function" ? children(session) : children}
         </main>
       </div>

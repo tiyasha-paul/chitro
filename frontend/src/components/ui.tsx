@@ -202,12 +202,12 @@ export const PageHeader = ({ title, description, eyebrow, action, children, clas
   const actions = action || children;
   return (
     <div className={`mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4 ${className}`}>
-      <div>
+      <div className="min-w-0 flex-1">
         {eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
-        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[var(--foreground)]">{title}</h1>
-        {description && <p className="mt-2 text-[var(--text-secondary)]">{description}</p>}
+        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[var(--foreground)] break-words [overflow-wrap:anywhere]">{title}</h1>
+        {description && <p className="mt-2 text-[var(--text-secondary)] break-words [overflow-wrap:anywhere]">{description}</p>}
       </div>
-      {actions && <div className="flex items-center gap-3">{action}{children}</div>}
+      {actions && <div className="flex items-center gap-3 shrink-0 flex-wrap">{action}{children}</div>}
     </div>
   );
 };
